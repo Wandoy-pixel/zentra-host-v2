@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ThemeProvider from '@/components/ThemeProvider';
 import ToastProvider from '@/components/ToastProvider';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,6 +41,7 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="mesh-bg" />
           {children}
+          <WhatsAppButton />
           <ToastProvider />
         </ThemeProvider>
       </body>

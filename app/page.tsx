@@ -234,6 +234,205 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Trust Badges */}
+      <section className="py-24 px-6">
+        <div className="max-w-[1240px] mx-auto">
+          <div className="text-center max-w-[700px] mx-auto mb-14">
+            <span
+              className="font-semibold text-xs tracking-[2px] uppercase"
+              style={{ color: 'var(--accent)' }}
+            >
+              Kenapa Zentra Host
+            </span>
+            <h2 className="font-extrabold my-3" style={{ fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: '-1px' }}>
+              Dipercaya ribuan pelanggan
+            </h2>
+            <p style={{ color: 'var(--text-muted)' }}>
+              Komitmen kami untuk performa, keamanan, dan layanan terbaik.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            {[
+              { icon: '🛡️', title: '99.99% Uptime', desc: 'SLA Terjamin' },
+              { icon: '💰', title: 'Garansi 30 Hari', desc: 'Refund 100%' },
+              { icon: '🔒', title: 'SSL Gratis', desc: "Let's Encrypt" },
+              { icon: '💬', title: 'Support 24/7', desc: 'Tim Engineer Lokal' },
+            ].map((b) => (
+              <div
+                key={b.title}
+                className="card text-center p-7 transition-all hover:-translate-y-1"
+              >
+                <div
+                  className="w-14 h-14 rounded-2xl grid place-items-center mb-4 mx-auto text-2xl"
+                  style={{ background: 'rgba(20,184,166,0.1)', color: 'var(--accent)' }}
+                >
+                  {b.icon}
+                </div>
+                <h3 className="text-base font-bold mb-1">{b.title}</h3>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {b.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-24 px-6">
+        <div className="max-w-[1240px] mx-auto">
+          <div className="text-center max-w-[700px] mx-auto mb-14">
+            <span
+              className="font-semibold text-xs tracking-[2px] uppercase"
+              style={{ color: 'var(--accent)' }}
+            >
+              Testimoni
+            </span>
+            <h2 className="font-extrabold my-3" style={{ fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: '-1px' }}>
+              Kata mereka tentang Zentra Host
+            </h2>
+            <p style={{ color: 'var(--text-muted)' }}>
+              Cerita nyata dari pelanggan setia kami.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                avatar: '👨‍💼',
+                name: 'Budi Santoso',
+                role: 'CEO TokoBudi.com',
+                quote: 'Pindah dari hosting lama, traffic naik 3x lipat. CDN-nya beneran ngebut!',
+              },
+              {
+                avatar: '👩‍💻',
+                name: 'Sari Wijaya',
+                role: 'Blogger',
+                quote: 'Customer support responsif 24/7. Sekali chat langsung jawab!',
+              },
+              {
+                avatar: '👨‍🔧',
+                name: 'Rio Pratama',
+                role: 'Developer',
+                quote: 'Deploy cepat, panel-nya intuitif. Saya rekomen ke semua klien.',
+              },
+              {
+                avatar: '👩‍🏫',
+                name: 'Linda Hapsari',
+                role: 'UKM Owner',
+                quote: 'Harga terjangkau, fitur enterprise. Pilihan terbaik UKM Indonesia!',
+              },
+            ].map((t) => (
+              <div
+                key={t.name}
+                className="card p-7 transition-all hover:-translate-y-1 flex flex-col"
+              >
+                <div className="flex gap-0.5 mb-4" style={{ color: '#fbbf24' }}>
+                  {'★★★★★'.split('').map((s, i) => (
+                    <span key={i} className="text-base">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <p
+                  className="text-sm mb-6 flex-1 leading-relaxed"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+                  <div
+                    className="w-11 h-11 rounded-full grid place-items-center text-2xl flex-shrink-0"
+                    style={{ background: 'rgba(20,184,166,0.1)' }}
+                  >
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">{t.name}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {t.role}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-24 px-6">
+        <div className="max-w-[1240px] mx-auto">
+          <div className="text-center max-w-[700px] mx-auto mb-14">
+            <span
+              className="font-semibold text-xs tracking-[2px] uppercase"
+              style={{ color: 'var(--accent)' }}
+            >
+              FAQ
+            </span>
+            <h2 className="font-extrabold my-3" style={{ fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: '-1px' }}>
+              Pertanyaan yang sering ditanyakan
+            </h2>
+            <p style={{ color: 'var(--text-muted)' }}>
+              Belum menemukan jawabannya? Hubungi tim support kami.
+            </p>
+          </div>
+
+          <div className="max-w-[820px] mx-auto space-y-4">
+            {[
+              {
+                q: 'Apa itu web hosting?',
+                a: 'Web hosting adalah layanan yang menyediakan ruang server agar website Anda bisa diakses melalui internet 24 jam non-stop. Sederhananya, hosting adalah "rumah" tempat file, database, dan email website Anda disimpan agar pengunjung dapat membukanya kapan saja.',
+              },
+              {
+                q: 'Berapa lama proses aktivasi setelah pembayaran?',
+                a: 'Aktivasi layanan dilakukan secara otomatis dalam waktu 1-5 menit setelah pembayaran berhasil dikonfirmasi sistem kami. Anda akan langsung menerima email berisi detail login cPanel dan informasi server.',
+              },
+              {
+                q: 'Apakah ada garansi uang kembali?',
+                a: 'Ya, kami memberikan garansi uang kembali 100% selama 30 hari pertama tanpa pertanyaan. Jika Anda merasa layanan kami tidak sesuai harapan, cukup hubungi tim support untuk proses refund yang cepat dan mudah.',
+              },
+              {
+                q: 'Bisakah saya upgrade paket nanti?',
+                a: 'Tentu saja. Anda bisa upgrade paket kapan saja langsung dari member area tanpa downtime. Sistem kami akan menghitung pro-rata biaya selisih, jadi Anda hanya membayar sisa periode aktif saja.',
+              },
+              {
+                q: 'Metode pembayaran apa saja yang tersedia?',
+                a: 'Kami menerima pembayaran via transfer bank (BCA, BNI, Mandiri, BRI), virtual account, e-wallet (GoPay, OVO, DANA, ShopeePay), QRIS, hingga kartu kredit. Semua pembayaran diproses secara aman melalui payment gateway tersertifikasi.',
+              },
+              {
+                q: 'Apakah support 24/7 beneran?',
+                a: 'Benar, tim support kami stand-by 24 jam sehari, 7 hari seminggu, termasuk hari libur nasional. Anda bisa menghubungi kami via live chat, tiket, WhatsApp, atau telepon. Rata-rata respon kami di bawah 5 menit.',
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="card group p-0 overflow-hidden"
+              >
+                <summary
+                  className="cursor-pointer list-none p-6 flex items-center justify-between gap-4 font-semibold text-base hover:opacity-90"
+                >
+                  <span>{item.q}</span>
+                  <span
+                    className="w-8 h-8 rounded-full grid place-items-center flex-shrink-0 text-lg transition-transform group-open:rotate-45"
+                    style={{ background: 'rgba(20,184,166,0.1)', color: 'var(--accent)' }}
+                  >
+                    +
+                  </span>
+                </summary>
+                <div
+                  className="px-6 pb-6 text-sm leading-relaxed"
+                  style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}
+                >
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="px-6 pb-20">
         <div className="max-w-[1240px] mx-auto">

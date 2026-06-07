@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Daftar Akun',
-  description: 'Daftar akun Zentra Host gratis dan mulai hosting hari ini.',
+  title: 'Daftar',
+  description: 'Buat akun Zentra Host gratis.',
 };
 
 export default function RegisterLayout({ children }: { children: React.ReactNode }) {

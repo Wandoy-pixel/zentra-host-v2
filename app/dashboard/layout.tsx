@@ -1,4 +1,5 @@
 import DashboardSidebar from '@/components/DashboardSidebar';
+import Greeting from '@/components/Greeting';
 import ThemeToggle from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -32,7 +33,7 @@ export default async function DashboardLayout({
         >
           <div>
             <h1 className="text-2xl font-extrabold" style={{ letterSpacing: '-0.5px' }}>
-              Selamat datang, {fullname.split(' ')[0]}! 👋
+              <Greeting name={fullname.split(' ')[0]} />
             </h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               Kelola layanan hosting kamu di sini.
