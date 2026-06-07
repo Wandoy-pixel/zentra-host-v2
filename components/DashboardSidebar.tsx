@@ -11,6 +11,7 @@ const MENU = [
   { href: '/dashboard/backup', label: 'Backup', icon: '💾' },
   { href: '/dashboard/cpanel', label: 'cPanel', icon: '🛠️' },
   { href: '/dashboard/invoice', label: 'Invoice', icon: '📄' },
+  { href: '/dashboard/tickets', label: 'Bantuan', icon: '🎫' },
   { href: '/dashboard/profile', label: 'Profil', icon: '👤' },
 ];
 

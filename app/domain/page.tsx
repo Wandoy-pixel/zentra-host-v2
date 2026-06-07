@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { DOMAIN_PRICES } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
+import { searchDomain, type SearchDomainResult } from '@/app/actions/domain';
 import type { User } from '@supabase/supabase-js';
 
 export default function DomainPage() {
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState('');
   const [ext, setExt] = useState('.com');
-  const [result, setResult] = useState<{ available: boolean; price: number; full: string } | null>(null);
+  const [result, setResult] = useState<SearchDomainResult | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => setUser(data.user));
@@ -21,12 +23,10 @@ export default function DomainPage() {
     e.preventDefault();
     const clean = name.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
     if (clean.length < 2) return;
-    let hash = 0;
-    const full = clean + ext;
-    for (let i = 0; i < full.length; i++) hash = ((hash << 5) - hash + full.charCodeAt(i)) | 0;
-    const available = Math.abs(hash) % 3 !== 0;
-    const price = DOMAIN_PRICES.find((d) => d.ext === ext)?.price || 100000;
-    setResult({ available, price, full });
+    startTransition(async () => {
+      const res = await searchDomain(clean, ext);
+      setResult(res);
+    });
   };
 
   return (
@@ -50,16 +50,24 @@ export default function DomainPage() {
               placeholder="contoh: bisnisku"
               required
               className="input flex-1 min-w-[200px]"
+              disabled={isPending}
             />
-            <select value={ext} onChange={(e) => setExt(e.target.value)} className="input min-w-[120px]">
+            <select
+              value={ext}
+              onChange={(e) => setExt(e.target.value)}
+              className="input min-w-[120px]"
+              disabled={isPending}
+            >
               {DOMAIN_PRICES.map((d) => (
                 <option key={d.ext} value={d.ext}>{d.ext}</option>
               ))}
             </select>
-            <button type="submit" className="btn btn-primary">Cek →</button>
+            <button type="submit" className="btn btn-primary" disabled={isPending}>
+              {isPending ? 'Mengecek…' : 'Cek →'}
+            </button>
           </form>
 
-          {result && (
+          {result && !isPending && (
             <div
               className="mt-5 p-4 rounded-lg"
               style={{
@@ -68,16 +76,46 @@ export default function DomainPage() {
                 color: result.available ? '#34d399' : '#f87171',
               }}
             >
-              {result.available ? (
-                <>
-                  <strong>✓ Domain {result.full} tersedia</strong><br />
-                  Harga: Rp {result.price.toLocaleString('id-ID')}/tahun
-                </>
-              ) : (
-                <>
-                  <strong>✗ Maaf, {result.full} sudah terdaftar</strong><br />
-                  Coba kombinasi nama atau ekstensi lain.
-                </>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  {result.available ? (
+                    <>
+                      <strong>✓ Domain {result.full} tersedia</strong><br />
+                      Harga: Rp {result.price.toLocaleString('id-ID')}/tahun
+                    </>
+                  ) : (
+                    <>
+                      <strong>✗ Maaf, {result.full} sudah terdaftar</strong><br />
+                      Coba kombinasi nama atau ekstensi lain.
+                    </>
+                  )}
+                </div>
+                <span
+                  className="text-xs px-2 py-1 rounded-full font-semibold whitespace-nowrap"
+                  title={
+                    result.source === 'dns'
+                      ? 'Hasil berasal dari DNS lookup real-time'
+                      : 'Hasil estimasi (DNS lookup tidak tersedia)'
+                  }
+                  style={{
+                    background:
+                      result.source === 'dns'
+                        ? 'rgba(59,130,246,0.15)'
+                        : 'rgba(234,179,8,0.15)',
+                    color:
+                      result.source === 'dns' ? '#60a5fa' : '#facc15',
+                    border:
+                      '1px solid ' +
+                      (result.source === 'dns'
+                        ? 'rgba(59,130,246,0.3)'
+                        : 'rgba(234,179,8,0.3)'),
+                  }}
+                >
+                  {result.source === 'dns' ? '🔎 DNS Lookup' : '⚠ Estimated'}
+                </span>
+              </div>
+              {result.error && (
+                <div className="mt-2 text-xs opacity-80">{result.error}</div>
               )}
             </div>
           )}

@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { sendWelcomeEmail } from '@/app/actions/email';
+import { isResendConfigured } from '@/lib/resend';
 
 export async function login(formData: FormData) {
   const email = String(formData.get('email')).trim().toLowerCase();
@@ -53,6 +55,17 @@ export async function register(formData: FormData) {
       description: 'Email: ' + email,
       color: 'success',
     });
+
+    // Kirim welcome email (skip silent kalau RESEND_API_KEY gak ada)
+    if (isResendConfigured()) {
+      try {
+        await sendWelcomeEmail(data.user.id);
+      } catch (e) {
+        // Jangan blok register flow kalau email gagal kirim
+        console.warn('[auth] gagal kirim welcome email:', e);
+      }
+    }
+
     revalidatePath('/', 'layout');
     redirect('/dashboard');
   }

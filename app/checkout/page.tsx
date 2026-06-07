@@ -3,13 +3,31 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Script from 'next/script';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { createClient } from '@/lib/supabase/client';
 import { createOrder } from '@/app/actions/orders';
+import { createPaymentSession } from '@/app/actions/payment';
 import { fmtRp } from '@/lib/data';
 import { showToast } from '@/components/ToastProvider';
 import type { User } from '@supabase/supabase-js';
+
+declare global {
+  interface Window {
+    snap?: {
+      pay(
+        token: string,
+        callbacks: {
+          onSuccess?: (result: unknown) => void;
+          onPending?: (result: unknown) => void;
+          onError?: (result: unknown) => void;
+          onClose?: () => void;
+        }
+      ): void;
+    };
+  }
+}
 
 const PERIODS = [
   { months: 1, label: '1 Bulan', discount: 0 },
@@ -18,9 +36,22 @@ const PERIODS = [
   { months: 12, label: '12 Bulan', discount: 20 },
 ];
 
+const MIDTRANS_CLIENT_KEY = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '';
+const MIDTRANS_IS_PRODUCTION = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true';
+const MIDTRANS_SNAP_URL = MIDTRANS_IS_PRODUCTION
+  ? 'https://app.midtrans.com/snap/snap.js'
+  : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<div className="min-h-screen grid place-items-center" style={{ color: 'var(--text-muted)' }}>Memuat checkout...</div>}>
+      {MIDTRANS_CLIENT_KEY && (
+        <Script
+          src={MIDTRANS_SNAP_URL}
+          data-client-key={MIDTRANS_CLIENT_KEY}
+          strategy="lazyOnload"
+        />
+      )}
       <CheckoutContent />
     </Suspense>
   );
@@ -31,7 +62,8 @@ function CheckoutContent() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [period, setPeriod] = useState(1);
-  const [payment, setPayment] = useState('');
+  const [fullname, setFullname] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const name = searchParams.get('name') || 'Paket Hosting';
@@ -39,7 +71,14 @@ function CheckoutContent() {
   const basePrice = parseInt(searchParams.get('price') || '0');
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => setUser(data.user));
+    createClient().auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      // Prefill nama dari user metadata kalau ada
+      const meta = data.user?.user_metadata as { full_name?: string; fullname?: string; phone?: string } | undefined;
+      if (meta?.full_name) setFullname(meta.full_name);
+      else if (meta?.fullname) setFullname(meta.fullname);
+      if (meta?.phone) setPhone(meta.phone);
+    });
   }, []);
 
   const periodData = PERIODS.find((p) => p.months === period)!;
@@ -55,19 +94,79 @@ function CheckoutContent() {
       router.push('/login');
       return;
     }
-    if (!payment) {
-      showToast('Pilih metode pembayaran', 'error');
+    if (!fullname.trim()) {
+      showToast('Nama lengkap wajib diisi', 'error');
       return;
     }
+    if (!phone.trim()) {
+      showToast('Nomor HP wajib diisi', 'error');
+      return;
+    }
+
     setLoading(true);
-    const result = await createOrder({ name, type, period, price: total, payment });
-    if ('error' in result) {
-      showToast('Gagal: ' + result.error, 'error');
+
+    // Step 1: buat order di DB
+    const orderResult = await createOrder({
+      name,
+      type,
+      period,
+      price: total,
+      payment: 'midtrans',
+    });
+    if ('error' in orderResult) {
+      showToast('Gagal membuat order: ' + orderResult.error, 'error');
       setLoading(false);
       return;
     }
-    showToast(`🎉 Pembayaran berhasil! Invoice ${result.invoiceNo}`, 'success');
-    setTimeout(() => router.push('/dashboard'), 1500);
+    const orderId = orderResult.orderId;
+    const invoiceNo = orderResult.invoiceNo;
+
+    // Fallback: tidak ada client key → skip Midtrans, langsung sukses (flow lama)
+    if (!MIDTRANS_CLIENT_KEY) {
+      showToast(`🎉 Order dibuat! Invoice ${invoiceNo}`, 'success');
+      setTimeout(() => router.push('/dashboard'), 1500);
+      return;
+    }
+
+    // Step 2: minta Snap token
+    const payResult = await createPaymentSession(
+      orderId,
+      total,
+      fullname,
+      user.email || '',
+      phone
+    );
+    if ('error' in payResult) {
+      showToast('Gagal membuat sesi pembayaran: ' + payResult.error, 'error');
+      setLoading(false);
+      return;
+    }
+
+    // Step 3: buka Snap popup
+    if (typeof window === 'undefined' || !window.snap) {
+      showToast('Snap belum siap, coba refresh halaman', 'error');
+      setLoading(false);
+      return;
+    }
+
+    window.snap.pay(payResult.snapToken, {
+      onSuccess: () => {
+        showToast('🎉 Pembayaran berhasil!', 'success');
+        router.push('/dashboard/invoice?success=1');
+      },
+      onPending: () => {
+        showToast('⏳ Pembayaran menunggu konfirmasi', 'success');
+        router.push('/dashboard/invoice?pending=1');
+      },
+      onError: () => {
+        showToast('Pembayaran gagal, silakan coba lagi', 'error');
+        setLoading(false);
+      },
+      onClose: () => {
+        showToast('Pembayaran dibatalkan', 'error');
+        setLoading(false);
+      },
+    });
   }
 
   return (
@@ -90,23 +189,55 @@ function CheckoutContent() {
             <label className="block mb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Email</label>
             <input value={user?.email || ''} disabled className="input" />
           </div>
-          <h2 className="text-xl mb-6 mt-8 font-bold">💳 Pembayaran</h2>
-          <div className="mb-5">
-            <label className="block mb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Metode Pembayaran</label>
-            <select value={payment} onChange={(e) => setPayment(e.target.value)} required className="input">
-              <option value="">-- Pilih metode --</option>
-              <option value="bca">Transfer BCA</option>
-              <option value="mandiri">Transfer Mandiri</option>
-              <option value="bni">Transfer BNI</option>
-              <option value="bri">Transfer BRI</option>
-              <option value="gopay">GoPay</option>
-              <option value="ovo">OVO</option>
-              <option value="dana">DANA</option>
-              <option value="qris">QRIS</option>
-            </select>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Nama Lengkap</label>
+            <input
+              value={fullname}
+              onChange={(e) => setFullname(e.target.value)}
+              required
+              placeholder="Nama sesuai identitas"
+              className="input"
+            />
           </div>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Nomor HP</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              placeholder="08xxxxxxxxxx"
+              type="tel"
+              className="input"
+            />
+          </div>
+
+          <h2 className="text-xl mb-4 mt-8 font-bold">💳 Pembayaran</h2>
+          <div
+            className="p-4 rounded-lg mb-5"
+            style={{ background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.25)' }}
+          >
+            <p className="text-sm mb-2">
+              🔒 Pembayaran aman via <strong>Midtrans</strong> (Mandiri, BCA, GoPay, OVO, QRIS, dll)
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {['Bank', 'GoPay', 'OVO', 'DANA', 'QRIS'].map((m) => (
+                <span
+                  key={m}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <button type="submit" disabled={loading || !user} className="btn btn-primary btn-lg btn-block">
-            {loading ? '⏳ Memproses pembayaran...' : 'Bayar Sekarang →'}
+            {loading ? '⏳ Memproses pembayaran...' : 'Lanjutkan ke Pembayaran →'}
           </button>
           {!user && (
             <p className="text-sm mt-4 text-center" style={{ color: 'var(--text-muted)' }}>

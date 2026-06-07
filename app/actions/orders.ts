@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { activateOrder } from './provisioning';
 
 type OrderPayload = {
   name: string;
@@ -51,8 +52,16 @@ export async function createOrder(payload: OrderPayload) {
     color: 'success',
   });
 
+  // Auto-provisioning real account dengan credentials
+  const provisionResult = await activateOrder(data.id);
+
   revalidatePath('/dashboard');
-  return { success: true, invoiceNo, orderId: data.id };
+  return {
+    success: true,
+    invoiceNo,
+    orderId: data.id,
+    provisioningId: provisionResult?.provisioningId,
+  };
 }
 
 export async function getOrders() {
