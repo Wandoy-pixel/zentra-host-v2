@@ -5,7 +5,7 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: 'class',
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -29,7 +29,7 @@ const config: Config = {
         'gradient-text': 'linear-gradient(135deg, #14b8a6 0%, #8b5cf6 50%, #ec4899 100%)',
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', '-apple-system', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 2s infinite',

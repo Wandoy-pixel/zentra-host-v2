@@ -31,9 +31,10 @@ export default function BackupPage() {
     if (!confirm('Buat backup baru? (files + database + email)')) return;
     setCreating(true);
     const result = await createBackup();
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
-    else {
-      const sizeStr = result.sizeMb! >= 1024 ? (result.sizeMb!/1024).toFixed(1) + ' GB' : result.sizeMb + ' MB';
+    if ('error' in result) {
+      showToast('Gagal: ' + result.error, 'error');
+    } else {
+      const sizeStr = result.sizeMb >= 1024 ? (result.sizeMb / 1024).toFixed(1) + ' GB' : result.sizeMb + ' MB';
       showToast('✓ Backup berhasil dibuat (' + sizeStr + ')', 'success');
       load();
     }
@@ -43,7 +44,7 @@ export default function BackupPage() {
   async function handleDelete(id: number) {
     if (!confirm('Hapus backup ini permanen?')) return;
     const result = await deleteBackup(id);
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else {
       showToast('✓ Backup dihapus', 'success');
       load();

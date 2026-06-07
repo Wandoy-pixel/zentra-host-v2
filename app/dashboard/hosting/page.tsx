@@ -1,16 +1,24 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { fmtDate, fmtRp } from '@/lib/data';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Hosting Saya',
+  description: 'Kelola paket hosting aktif Anda.',
+};
 
 export default async function HostingPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
   const { data: orders } = await supabase
     .from('orders')
     .select('*')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .neq('type', 'domain')
     .order('created_at', { ascending: false });
 

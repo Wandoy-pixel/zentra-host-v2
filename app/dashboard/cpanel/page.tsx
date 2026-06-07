@@ -33,12 +33,12 @@ export default function CpanelPage() {
 
   async function handleAdd() {
     if (!input.trim()) return;
-    let result;
+    let result: { error: string } | { success: boolean };
     if (tab === 'subdomain') result = await addSubdomain(input);
     else if (tab === 'email') result = await addEmailAccount(input);
     else result = await addDatabase(input);
 
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else {
       showToast(`✓ ${tab === 'subdomain' ? 'Subdomain' : tab === 'email' ? 'Email' : 'Database'} berhasil dibuat`, 'success');
       setInput('');
@@ -48,12 +48,12 @@ export default function CpanelPage() {
 
   async function handleDelete(id: number) {
     if (!confirm('Hapus item ini permanen?')) return;
-    let result;
+    let result: { error: string } | { success: boolean };
     if (tab === 'subdomain') result = await deleteSubdomain(id);
     else if (tab === 'email') result = await deleteEmailAccount(id);
     else result = await deleteDatabase(id);
 
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else { showToast('✓ Dihapus', 'success'); load(); }
   }
 

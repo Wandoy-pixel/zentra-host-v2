@@ -47,7 +47,7 @@ export default function Navbar({ user }: { user: User | null }) {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors block ${
                   pathname === item.href ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'
                 }`}
-                style={pathname === item.href ? { background: 'rgba(255,255,255,0.05)' } : undefined}
+                style={pathname === item.href ? { background: 'var(--surface-soft)' } : undefined}
               >
                 {item.label}
               </Link>
@@ -77,7 +77,7 @@ export default function Navbar({ user }: { user: User | null }) {
             style={{
               width: 38,
               height: 38,
-              background: 'rgba(255,255,255,0.05)',
+              background: 'var(--surface-soft)',
               border: '1px solid var(--border)',
               color: 'var(--text)',
             }}

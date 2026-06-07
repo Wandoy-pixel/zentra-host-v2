@@ -34,7 +34,7 @@ export default function ProfilePage() {
     setSaving(true);
     const fd = new FormData(e.currentTarget);
     const result = await updateProfile(String(fd.get('fullname')), String(fd.get('phone')));
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else {
       showToast('✓ Profil berhasil diperbarui', 'success');
       setProfile((p) => p ? { ...p, fullname: String(fd.get('fullname')), phone: String(fd.get('phone')) } : null);

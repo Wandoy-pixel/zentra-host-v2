@@ -38,7 +38,7 @@ export default function DnsPage() {
       value: String(fd.get('value')),
       ttl: parseInt(String(fd.get('ttl'))) || 3600,
     });
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else {
       showToast('✓ DNS record berhasil ditambah', 'success');
       setShowForm(false);
@@ -50,7 +50,7 @@ export default function DnsPage() {
   async function handleDelete(id: number) {
     if (!confirm('Hapus DNS record ini?')) return;
     const result = await deleteDnsRecord(id);
-    if (result.error) showToast('Gagal: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal: ' + result.error, 'error');
     else {
       showToast('✓ DNS record dihapus', 'success');
       load();

@@ -269,14 +269,65 @@ export async function markAllNotifsRead() {
 }
 
 // === Contact Form ===
+// Simple in-memory rate limit (per-process). For production, replace with
+// a persistent store (Upstash, Redis, atau tabel rate_limit di Supabase).
+const contactRateLimit = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 jam
+const RATE_LIMIT_MAX = 5; // max 5 pesan / jam / email
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function sendContactMessage(payload: {
   name: string;
   email: string;
   subject: string;
   message: string;
+  honeypot?: string;
 }) {
+  // Honeypot: bot biasanya mengisi field tersembunyi
+  if (payload.honeypot && payload.honeypot.trim() !== '') {
+    return { success: true as const }; // pura-pura sukses biar bot tidak retry
+  }
+
+  // Validasi input
+  const name = payload.name?.trim() || '';
+  const email = payload.email?.trim().toLowerCase() || '';
+  const subject = payload.subject?.trim() || '';
+  const message = payload.message?.trim() || '';
+
+  if (name.length < 2 || name.length > 100) {
+    return { error: 'Nama harus 2-100 karakter' };
+  }
+  if (!isValidEmail(email) || email.length > 200) {
+    return { error: 'Format email tidak valid' };
+  }
+  if (subject.length < 2 || subject.length > 200) {
+    return { error: 'Subjek harus 2-200 karakter' };
+  }
+  if (message.length < 10 || message.length > 5000) {
+    return { error: 'Pesan harus 10-5000 karakter' };
+  }
+
+  // Rate limit per-email
+  const now = Date.now();
+  const hits = (contactRateLimit.get(email) || []).filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS,
+  );
+  if (hits.length >= RATE_LIMIT_MAX) {
+    return { error: 'Terlalu banyak pesan. Coba lagi nanti.' };
+  }
+  hits.push(now);
+  contactRateLimit.set(email, hits);
+
   const supabase = createClient();
-  const { error } = await supabase.from('messages').insert(payload);
+  const { error } = await supabase.from('messages').insert({
+    name,
+    email,
+    subject,
+    message,
+  });
   if (error) return { error: error.message };
-  return { success: true };
+  return { success: true as const };
 }

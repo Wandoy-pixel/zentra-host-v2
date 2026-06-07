@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -19,6 +19,14 @@ const PERIODS = [
 ];
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen grid place-items-center" style={{ color: 'var(--text-muted)' }}>Memuat checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -53,7 +61,7 @@ export default function CheckoutPage() {
     }
     setLoading(true);
     const result = await createOrder({ name, type, period, price: total, payment });
-    if (result.error) {
+    if ('error' in result) {
       showToast('Gagal: ' + result.error, 'error');
       setLoading(false);
       return;

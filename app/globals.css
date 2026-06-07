@@ -20,6 +20,9 @@
     --navbar-bg: rgba(10, 14, 26, 0.7);
     --input-bg: #131829;
     --mesh-opacity: 0.25;
+    --surface-soft: rgba(255, 255, 255, 0.05);
+    --surface-soft-hover: rgba(255, 255, 255, 0.1);
+    --surface-soft-strong: rgba(255, 255, 255, 0.08);
   }
 
   [data-theme='light'] {
@@ -32,12 +35,15 @@
     --navbar-bg: rgba(255, 255, 255, 0.85);
     --input-bg: #ffffff;
     --mesh-opacity: 0.12;
+    --surface-soft: rgba(0, 0, 0, 0.04);
+    --surface-soft-hover: rgba(0, 0, 0, 0.08);
+    --surface-soft-strong: rgba(0, 0, 0, 0.06);
   }
 
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
@@ -90,12 +96,12 @@
     box-shadow: 0 12px 32px rgba(20, 184, 166, 0.5);
   }
   .btn-ghost {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-soft);
     color: var(--text);
     border: 1px solid var(--border);
   }
   .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-soft-hover);
   }
   .btn-lg {
     @apply px-7 py-4 text-base;
@@ -194,7 +200,7 @@
 /* Progress bar */
 .progress-bar {
   height: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-soft-strong);
   border-radius: 100px;
   overflow: hidden;
 }

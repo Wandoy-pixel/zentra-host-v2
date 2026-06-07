@@ -208,7 +208,7 @@ export default async function HomePage() {
                   {p.features.map((f) => (
                     <li key={f} className="flex items-center gap-2.5 text-sm py-1">
                       <span
-                        className="w-4.5 h-4.5 rounded-full grid place-items-center text-[10px] font-bold flex-shrink-0"
+                        className="rounded-full grid place-items-center text-[10px] font-bold flex-shrink-0"
                         style={{
                           background: 'rgba(20,184,166,0.15)',
                           color: 'var(--accent)',

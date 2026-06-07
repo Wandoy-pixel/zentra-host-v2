@@ -26,18 +26,20 @@ export default function KontakPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const result = await sendContactMessage({
       name: String(fd.get('name')),
       email: String(fd.get('email')),
       subject: String(fd.get('subject')),
       message: String(fd.get('message')),
+      honeypot: String(fd.get('website') || ''),
     });
-    if (result.error) showToast('Gagal kirim: ' + result.error, 'error');
+    if ('error' in result) showToast('Gagal kirim: ' + result.error, 'error');
     else {
       showToast('✓ Pesan terkirim! Tim kami akan merespon dalam 1x24 jam.', 'success');
-      e.currentTarget.reset();
+      form.reset();
     }
     setLoading(false);
   }
@@ -85,6 +87,15 @@ export default function KontakPage() {
           <div className="card">
             <h2 className="text-xl mb-6 font-bold">📨 Kirim Pesan</h2>
             <form onSubmit={handleSubmit}>
+              {/* Honeypot field — hidden dari user, bot biasanya isi otomatis */}
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                style={{ position: 'absolute', left: '-9999px', width: 1, height: 1 }}
+              />
               <div className="mb-4">
                 <label className="block mb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Nama Lengkap</label>
                 <input type="text" name="name" required className="input" />

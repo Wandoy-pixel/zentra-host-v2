@@ -2,13 +2,11 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { login } from '@/app/actions/auth';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ToastProvider';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,7 +25,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/dashboard' },
+      options: { redirectTo: window.location.origin + '/auth/callback?next=/dashboard' },
     });
     if (error) showToast('Login Google belum aktif: ' + error.message, 'error');
   }

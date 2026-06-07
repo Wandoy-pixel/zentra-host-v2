@@ -1,12 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { fmtRp, PAKET_QUOTA, timeAgo } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  description: 'Overview layanan hosting, domain, dan resource Anda.',
+};
+
 export default async function DashboardOverview() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
   const [
     { data: orders },
@@ -16,12 +24,12 @@ export default async function DashboardOverview() {
     { count: emC },
     { count: dbC },
   ] = await Promise.all([
-    supabase.from('orders').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }),
-    supabase.from('notifications').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(5),
-    supabase.from('activity_log').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(5),
-    supabase.from('subdomains').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-    supabase.from('email_accounts').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-    supabase.from('user_databases').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
+    supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+    supabase.from('activity_log').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+    supabase.from('subdomains').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('email_accounts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('user_databases').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ]);
 
   const allOrders = orders || [];
