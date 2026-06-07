@@ -71,14 +71,60 @@ export async function POST(req: Request) {
 
   const supabase = getServiceClient();
 
-  // 2. Lookup payment row
-  const { data: payment, error: payFetchErr } = await supabase
-    .from('payments')
-    .select('id, order_id, user_id, status')
-    .eq('midtrans_order_id', midtransOrderId)
-    .single();
+  // 2. Lookup payment row (fault tolerant)
+  // Kalau payments table missing / kolomnya beda, kita fallback ke orders
+  // via parsing midtransOrderId (format: ZTR-<orderId>-<timestamp><rand>).
+  let payment:
+    | { id: number | string | null; order_id: number | string | null; user_id: string | null; status: string | null }
+    | null = null;
 
-  if (payFetchErr || !payment) {
+  try {
+    const { data, error: payFetchErr } = await supabase
+      .from('payments')
+      .select('id, order_id, user_id, status')
+      .eq('midtrans_order_id', midtransOrderId)
+      .single();
+
+    if (payFetchErr) {
+      console.warn(
+        '[webhook] lookup payments failed, continue with fallback:',
+        payFetchErr.message
+      );
+    } else if (data) {
+      payment = data;
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn('[webhook] lookup payments threw, continue:', msg);
+  }
+
+  // Fallback — parse orderId dari midtransOrderId pattern "ZTR-<orderId>-..."
+  if (!payment) {
+    const match = /^ZTR-(\d+)-/.exec(midtransOrderId || '');
+    if (match) {
+      const parsedOrderId = Number(match[1]);
+      try {
+        const { data: ord } = await supabase
+          .from('orders')
+          .select('id, user_id, status')
+          .eq('id', parsedOrderId)
+          .single();
+        if (ord) {
+          payment = {
+            id: null,
+            order_id: ord.id,
+            user_id: ord.user_id,
+            status: ord.status ?? null,
+          };
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn('[webhook] fallback orders lookup threw:', msg);
+      }
+    }
+  }
+
+  if (!payment) {
     // Tetap return 200 supaya Midtrans tidak retry forever — tapi tandai
     return NextResponse.json(
       { received: true, warning: 'payment not found' },
@@ -109,41 +155,93 @@ export async function POST(req: Request) {
     finalStatus = 'pending';
   }
 
-  // 4. Update payments
+  // 4. Update payments (fault tolerant)
   const paidAt = isSuccess ? new Date().toISOString() : null;
-  await supabase
-    .from('payments')
-    .update({
-      status: finalStatus,
-      transaction_id: transaction_id ?? null,
-      midtrans_response: notif,
-      paid_at: paidAt,
-    })
-    .eq('id', payment.id);
-
-  // 5. Side effects kalau sukses
-  if (isSuccess && payment.status !== 'paid') {
-    // 5a. Update orders.status — kalau kolomnya gak ada, supabase akan return error, kita abaikan
-    await supabase
-      .from('orders')
-      .update({ status: 'paid' })
-      .eq('id', payment.order_id);
-
-    // 5b. Trigger provisioning
-    await supabase.from('provisioning_queue').insert({
-      order_id: payment.order_id,
-      user_id: payment.user_id,
-      status: 'queued',
-    });
-
-    // 5c. Trigger send invoice email
-    await supabase.from('emails_log').insert({
-      user_id: payment.user_id,
-      order_id: payment.order_id,
-      template: 'invoice',
-      status: 'queued',
-    });
+  if (payment.id != null) {
+    try {
+      const { error: payUpdErr } = await supabase
+        .from('payments')
+        .update({
+          status: finalStatus,
+          transaction_id: transaction_id ?? null,
+          midtrans_response: notif,
+          paid_at: paidAt,
+        })
+        .eq('id', payment.id);
+      if (payUpdErr) {
+        console.warn(
+          '[webhook] update payments failed, continue:',
+          payUpdErr.message
+        );
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[webhook] update payments threw, continue:', msg);
+    }
   }
 
+  // 5. Side effects kalau sukses — tiap step fault tolerant
+  if (isSuccess && payment.status !== 'paid') {
+    // 5a. Update orders.status
+    try {
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .update({ status: 'paid' })
+        .eq('id', payment.order_id);
+      if (ordErr) {
+        console.warn(
+          '[webhook] update orders failed, continue:',
+          ordErr.message
+        );
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[webhook] update orders threw, continue:', msg);
+    }
+
+    // 5b. Trigger provisioning
+    try {
+      const { error: provErr } = await supabase
+        .from('provisioning_queue')
+        .insert({
+          order_id: payment.order_id,
+          user_id: payment.user_id,
+          status: 'queued',
+        });
+      if (provErr) {
+        console.warn(
+          '[webhook] insert provisioning_queue failed, continue:',
+          provErr.message
+        );
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(
+        '[webhook] insert provisioning_queue threw, continue:',
+        msg
+      );
+    }
+
+    // 5c. Trigger send invoice email
+    try {
+      const { error: emailErr } = await supabase.from('emails_log').insert({
+        user_id: payment.user_id,
+        order_id: payment.order_id,
+        template: 'invoice',
+        status: 'queued',
+      });
+      if (emailErr) {
+        console.warn(
+          '[webhook] insert emails_log failed, continue:',
+          emailErr.message
+        );
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[webhook] insert emails_log threw, continue:', msg);
+    }
+  }
+
+  // ALWAYS 200 OK — Midtrans tidak akan retry, schema mismatch ditangani gracefully
   return NextResponse.json({ received: true }, { status: 200 });
 }

@@ -76,22 +76,33 @@ export async function createPaymentSession(
     return { error: msg };
   }
 
-  // 6. Insert payments row
-  const { error: payErr } = await supabase.from('payments').insert({
-    order_id: order.id,
-    user_id: user.id,
-    midtrans_order_id: midtransOrderId,
-    gross_amount: grossAmount,
-    snap_token: snap.token,
-    redirect_url: snap.redirect_url,
-    status: 'pending',
-  });
+  // 6. Insert payments row — fault tolerant terhadap schema mismatch.
+  // Kalau insert gagal (kolom missing, RLS, dll), kita TIDAK blokir user;
+  // Snap popup tetap dimunculkan supaya user bisa bayar. Webhook nanti
+  // bisa fallback ke orders table via midtrans_order_id kalau perlu.
+  try {
+    const { error: payErr } = await supabase.from('payments').insert({
+      order_id: order.id,
+      user_id: user.id,
+      midtrans_order_id: midtransOrderId,
+      gross_amount: grossAmount,
+      snap_token: snap.token,
+      redirect_url: snap.redirect_url,
+      status: 'pending',
+    });
 
-  if (payErr) {
-    // Jangan blokir pembayaran kalau cuma logging insert gagal — tapi tetap return error
-    return { error: 'Gagal menyimpan sesi pembayaran: ' + payErr.message };
+    if (payErr) {
+      console.warn(
+        '[payment] insert payments failed, continue:',
+        payErr.message
+      );
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn('[payment] insert payments threw, continue:', msg);
   }
 
+  // SELALU return snapToken biar Snap popup tetap muncul
   return {
     snapToken: snap.token,
     redirectUrl: snap.redirect_url,
