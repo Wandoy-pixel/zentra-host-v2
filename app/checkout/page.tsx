@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import { createClient } from '@/lib/supabase/client';
 import { createOrder } from '@/app/actions/orders';
 import { createPaymentSession } from '@/app/actions/payment';
+import { validatePromoCode } from '@/app/actions/promo';
 import { fmtRp } from '@/lib/data';
 import { showToast } from '@/components/ToastProvider';
 import type { User } from '@supabase/supabase-js';
@@ -65,6 +66,12 @@ function CheckoutContent() {
   const [fullname, setFullname] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoError, setPromoError] = useState('');
+  const [promoApplied, setPromoApplied] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoMessage, setPromoMessage] = useState('');
 
   const name = searchParams.get('name') || 'Paket Hosting';
   const type = (searchParams.get('type') || 'shared') as 'shared' | 'cloud' | 'vps' | 'domain';
@@ -84,8 +91,54 @@ function CheckoutContent() {
   const periodData = PERIODS.find((p) => p.months === period)!;
   const subtotal = basePrice * (type === 'domain' ? 1 : period);
   const discount = type === 'domain' ? 0 : subtotal * (periodData.discount / 100);
-  const ppn = (subtotal - discount) * 0.11;
-  const total = Math.round(subtotal - discount + ppn);
+  const afterPromo = Math.max(0, subtotal - discount - promoDiscount);
+  const ppn = afterPromo * 0.11;
+  const total = Math.round(afterPromo + ppn);
+
+  // Reset promo kalau periode/base amount berubah dan jadi di bawah min_amount
+  useEffect(() => {
+    if (promoApplied && promoDiscount > subtotal - discount) {
+      setPromoApplied('');
+      setPromoDiscount(0);
+      setPromoMessage('');
+      setPromoError('Promo direset karena total berubah, silakan apply ulang');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal, discount]);
+
+  async function handleApplyPromo() {
+    setPromoError('');
+    setPromoMessage('');
+    if (!promoCode.trim()) {
+      setPromoError('Masukkan kode promo dulu');
+      return;
+    }
+    const baseAmount = Math.round(subtotal - discount);
+    setPromoLoading(true);
+    const result = await validatePromoCode(promoCode.trim(), baseAmount);
+    setPromoLoading(false);
+    if ('error' in result) {
+      setPromoApplied('');
+      setPromoDiscount(0);
+      setPromoMessage('');
+      setPromoError(result.error);
+      showToast(result.error, 'error');
+      return;
+    }
+    setPromoDiscount(result.discount);
+    setPromoApplied(promoCode.trim().toUpperCase());
+    setPromoMessage(result.message);
+    setPromoError('');
+    showToast(result.message, 'success');
+  }
+
+  function handleRemovePromo() {
+    setPromoApplied('');
+    setPromoDiscount(0);
+    setPromoMessage('');
+    setPromoError('');
+    setPromoCode('');
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -211,6 +264,49 @@ function CheckoutContent() {
             />
           </div>
 
+          <h2 className="text-xl mb-4 mt-8 font-bold">🎁 Kode Promo</h2>
+          <div className="mb-5">
+            <div className="flex gap-2">
+              <input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                placeholder="Masukkan kode promo (cth: WELCOME50)"
+                className="input"
+                disabled={!!promoApplied || promoLoading}
+                style={{ flex: 1 }}
+              />
+              {promoApplied ? (
+                <button
+                  type="button"
+                  onClick={handleRemovePromo}
+                  className="btn"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}
+                >
+                  Hapus
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={promoLoading}
+                  className="btn btn-primary"
+                >
+                  {promoLoading ? '⏳' : 'Apply'}
+                </button>
+              )}
+            </div>
+            {promoMessage && (
+              <p className="text-sm mt-2" style={{ color: '#34d399' }}>
+                ✓ {promoMessage}
+              </p>
+            )}
+            {promoError && (
+              <p className="text-sm mt-2" style={{ color: '#ef4444' }}>
+                {promoError}
+              </p>
+            )}
+          </div>
+
           <h2 className="text-xl mb-4 mt-8 font-bold">💳 Pembayaran</h2>
           <div
             className="p-4 rounded-lg mb-5"
@@ -277,6 +373,12 @@ function CheckoutContent() {
             <div className="flex justify-between text-sm py-3" style={{ color: '#34d399' }}>
               <span>Diskon {periodData.discount}%</span>
               <span>− {fmtRp(discount)}</span>
+            </div>
+          )}
+          {promoApplied && promoDiscount > 0 && (
+            <div className="flex justify-between text-sm py-3" style={{ color: '#34d399' }}>
+              <span>Promo Code Discount ({promoApplied})</span>
+              <span>− {fmtRp(promoDiscount)}</span>
             </div>
           )}
           <div className="flex justify-between text-sm py-3">

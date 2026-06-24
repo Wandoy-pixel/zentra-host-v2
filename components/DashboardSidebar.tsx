@@ -13,6 +13,9 @@ const MENU = [
   { href: '/dashboard/invoice', label: 'Invoice', icon: '📄' },
   { href: '/dashboard/tickets', label: 'Bantuan', icon: '🎫' },
   { href: '/dashboard/profile', label: 'Profil', icon: '👤' },
+  { href: '/dashboard/referral', label: 'Affiliate', icon: '💎' },
+  { href: '/dashboard/loyalty', label: 'Loyalty Points', icon: '🏆' },
+  { href: '/help', label: 'Bantuan', icon: '❓' },
 ];
 
 export default function DashboardSidebar() {

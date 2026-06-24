@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import ThemeToggle from './ThemeToggle';
+import CurrencySwitcher from './CurrencySwitcher';
 import type { User } from '@supabase/supabase-js';
 
 const NAV_ITEMS = [
@@ -11,6 +12,8 @@ const NAV_ITEMS = [
   { href: '/paket', label: 'Paket' },
   { href: '/domain', label: 'Domain' },
   { href: '/kontak', label: 'Kontak' },
+  { href: '/status', label: 'Status' },
+  { href: '/help', label: 'Bantuan' },
 ];
 
 export default function Navbar({ user }: { user: User | null }) {
@@ -56,6 +59,7 @@ export default function Navbar({ user }: { user: User | null }) {
         </ul>
 
         <div className="flex gap-2.5 items-center">
+          <CurrencySwitcher />
           <ThemeToggle />
           {user ? (
             <Link href="/dashboard" className="btn btn-primary">

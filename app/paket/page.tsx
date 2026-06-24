@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { PAKET_DATA, fmtRp } from '@/lib/data';
+import { PAKET_DATA } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
+import { useCurrency } from '@/components/CurrencySwitcher';
 import type { User } from '@supabase/supabase-js';
 
 type PaketType = 'shared' | 'cloud' | 'vps';
@@ -13,6 +14,7 @@ type PaketType = 'shared' | 'cloud' | 'vps';
 export default function PaketPage() {
   const [type, setType] = useState<PaketType>('shared');
   const [user, setUser] = useState<User | null>(null);
+  const { format } = useCurrency();
 
   useEffect(() => {
     const supabase = createClient();
@@ -107,11 +109,11 @@ export default function PaketPage() {
                   {p.desc}
                 </p>
                 <div className="text-sm line-through mb-1" style={{ color: 'var(--text-muted)' }}>
-                  {fmtRp(p.oldPrice)}
+                  {format(p.oldPrice)}
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-6">
                   <span className="font-extrabold" style={{ fontSize: 42, letterSpacing: '-1px' }}>
-                    {fmtRp(p.price)}
+                    {format(p.price)}
                   </span>
                   <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     /bln

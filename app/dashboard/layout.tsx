@@ -1,5 +1,6 @@
 import DashboardSidebar from '@/components/DashboardSidebar';
 import Greeting from '@/components/Greeting';
+import OnboardingTrigger from '@/components/OnboardingTrigger';
 import ThemeToggle from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -60,6 +61,7 @@ export default async function DashboardLayout({
         </header>
         {children}
       </main>
+      <OnboardingTrigger />
     </div>
   );
 }

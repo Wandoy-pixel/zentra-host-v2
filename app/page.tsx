@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LiveCounter from '@/components/LiveCounter';
+import RecentPurchase from '@/components/RecentPurchase';
 import { createClient } from '@/lib/supabase/server';
 import { PAKET_DATA, fmtRp } from '@/lib/data';
 
@@ -11,6 +13,7 @@ export default async function HomePage() {
   return (
     <>
       <Navbar user={user} />
+      <RecentPurchase />
 
       {/* Hero */}
       <section className="py-20 px-6">
@@ -29,6 +32,10 @@ export default async function HomePage() {
             />
             Server baru di Jakarta sudah online
           </span>
+
+          <div className="flex justify-center mb-6">
+            <LiveCounter initialCount={234} />
+          </div>
 
           <h1
             className="font-extrabold mb-6 leading-[1.05]"

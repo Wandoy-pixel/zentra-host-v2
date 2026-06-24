@@ -1,9 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import ThemeProvider from '@/components/ThemeProvider';
 import ToastProvider from '@/components/ToastProvider';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { CurrencyProvider } from '@/components/CurrencySwitcher';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,12 +24,25 @@ export const metadata: Metadata = {
     'Web hosting modern dengan NVMe SSD, LiteSpeed Enterprise, dan CDN global. Cepat, andal, dan tak terbatas.',
   keywords: ['web hosting', 'cloud hosting', 'vps', 'domain', 'indonesia'],
   authors: [{ name: 'Zentra Host' }],
+  manifest: '/manifest.json',
+  applicationName: 'Zentra Host',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Zentra Host',
+  },
   openGraph: {
     title: 'Zentra Host',
     description: 'Web hosting modern untuk bisnis Anda',
     type: 'website',
     locale: 'id_ID',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#14b8a6',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -39,11 +54,22 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning className={inter.variable}>
       <body>
         <ThemeProvider>
-          <div className="mesh-bg" />
-          {children}
-          <WhatsAppButton />
-          <ToastProvider />
+          <CurrencyProvider>
+            <div className="mesh-bg" />
+            {children}
+            <WhatsAppButton />
+            <ToastProvider />
+          </CurrencyProvider>
         </ThemeProvider>
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ("serviceWorker" in navigator) {
+              window.addEventListener("load", function () {
+                navigator.serviceWorker.register("/sw.js").catch(function () {});
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );

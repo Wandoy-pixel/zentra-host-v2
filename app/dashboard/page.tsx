@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { fmtRp, PAKET_QUOTA, timeAgo } from '@/lib/data';
+import StatsCard from '@/components/StatsCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,23 +77,37 @@ export default async function DashboardOverview() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { ic: '🌐', val: hosting.length, label: 'Hosting Aktif', bg: 'rgba(20,184,166,0.1)', cl: 'var(--accent)' },
-          { ic: '🔗', val: domains.length, label: 'Domain Terdaftar', bg: 'rgba(99,102,241,0.1)', cl: 'var(--secondary)' },
-          { ic: '📄', val: allOrders.length, label: 'Total Invoice', bg: 'rgba(245,158,11,0.1)', cl: 'var(--warning)' },
-          { ic: '💰', val: fmtRp(total), label: 'Total Pengeluaran', bg: 'rgba(239,68,68,0.1)', cl: 'var(--danger)' },
-        ].map((s) => (
-          <div key={s.label} className="card transition-all hover:-translate-y-1">
-            <div
-              className="w-10 h-10 rounded-xl grid place-items-center text-lg mb-3"
-              style={{ background: s.bg, color: s.cl }}
-            >
-              {s.ic}
-            </div>
-            <h2 className="font-extrabold text-2xl">{s.val}</h2>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-          </div>
-        ))}
+        <StatsCard
+          ic="🌐"
+          value={hosting.length}
+          label="Hosting Aktif"
+          bg="rgba(20,184,166,0.1)"
+          cl="var(--accent)"
+        />
+        <StatsCard
+          ic="🔗"
+          value={domains.length}
+          label="Domain Terdaftar"
+          bg="rgba(99,102,241,0.1)"
+          cl="var(--secondary)"
+        />
+        <StatsCard
+          ic="📄"
+          value={allOrders.length}
+          label="Total Invoice"
+          bg="rgba(245,158,11,0.1)"
+          cl="var(--warning)"
+        />
+        <StatsCard
+          ic="💰"
+          value={total}
+          prefix="Rp "
+          label="Total Pengeluaran"
+          bg="rgba(239,68,68,0.1)"
+          cl="var(--danger)"
+          showSparkline
+          sparklineData={[100, 200, 150, 300, 400, 350, total]}
+        />
       </div>
 
       {/* Resource Usage + Quick Actions */}
