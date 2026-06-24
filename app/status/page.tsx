@@ -87,11 +87,21 @@ function StatusBadge({ status, size = 'sm' }: { status: ServiceStatus; size?: 's
 }
 
 export default async function StatusPage() {
-  // Real-time API check
-  const V2 = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  const apiStatus = await fetch(V2 + '/api/keepalive', { cache: 'no-store' })
-    .then((r) => r.ok)
-    .catch(() => false);
+  // Real-time API check — pakai production URL absolute (fallback dari env, lalu deteksi Vercel, lalu localhost)
+  const V2 =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    (process.env.VERCEL_ENV === 'production' ? 'https://zentra-host-v2.vercel.app' : null) ||
+    'https://zentra-host-v2.vercel.app';
+
+  // Use Supabase auth health endpoint directly — lebih reliable + tidak butuh tahu URL sendiri
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const apiStatus = await Promise.race([
+    fetch(SUPABASE_URL + '/auth/v1/health', { cache: 'no-store' })
+      .then((r) => r.status < 500) // 200 OK, 401 unauthorized, etc = service alive
+      .catch(() => false),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)),
+  ]).catch(() => false);
 
   const services: ServiceRow[] = [
     {
